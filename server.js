@@ -2,12 +2,7 @@ const inquirer = require("inquirer");
 const fs = require("fs");  
 
 const mysql = require('mysql2');
-
-const PORT = process.env.PORT || 3001;
-const app = express();
-
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json()); 
+ 
 
 
 const db = mysql.createConnection(
@@ -22,7 +17,7 @@ const db = mysql.createConnection(
     console.log(`Connected to the tracker_db database.`)
 ); 
 
-function intialize() { 
+function init () { 
     inquirer 
         .prompt([ 
             { 
@@ -35,10 +30,10 @@ function intialize() {
         ])
         .then((answers) => { 
             if (answers === "View All Employess" ) { 
-                viewAll();
+                viewEmp();
             } else if (answers === "Add Employee") { 
                 addEmployee();
-            } else if (answers === "Update Emplopyee Roles") { 
+            } else if (answers === "Update Employee Roles") { 
                 updateRoles();
             } else if (answers === "View All Roles") { 
                 viewRoles();
@@ -82,9 +77,21 @@ function addEmployee () {
             },
 
         ]) 
-        .then((answers) => { 
+        .then((ans) => { 
+            db.query(`INSERT INTO employees(first_name, last_name)
+                    VALUES(?, ?)`, [ans.first_name, ans.last_name], (err, results) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    db.query(`SELECT * FROM employees`, (err, results) => {
+                        err ? console.error(err) : console.table(results);
+                        init();
+                    })
+                }
+        }) 
+        
+    })
 
-        })
 }; 
 
 function addDepartment () { 
@@ -97,8 +104,20 @@ function addDepartment () {
             },
         ])
         .then((answer) => { 
-
+            db.query(`INSERT INTO department(name)
+                    VALUES(?)`, answer.newdepart, (err, results) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    db.query(`SELECT * FROM department`, (err, results) => {
+                        err ? console.error(err) : console.table(results);
+                        init();
+                    })
+                }
+            }
+            )
         })
+        
 }; 
 
 function addRole () { 
@@ -124,4 +143,30 @@ function addRole () {
         .then((answers) => { 
 
         })
+}; 
+
+function updateRoles () { 
+
+}; 
+
+function viewRoles () { 
+    db.query(`SELECT * FROM roles`, (err, results) => {
+        err ? console.error(err) : console.table(results);
+        init();
+    })
+}; 
+
+function viewEmp () {  
+    db.query(`SELECT * FROM employees`, (err, results) => {
+        err ? console.error(err) : console.table(results);
+        init();
+    })
+
+}; 
+
+function viewDep () { 
+    db.query(`SELECT * FROM department`, (err, results) => {
+        err ? console.error(err) : console.table(results);
+        init();
+    })
 };
