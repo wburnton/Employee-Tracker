@@ -2,14 +2,14 @@ const inquirer = require("inquirer");
 const fs = require("fs");  
 
 const mysql = require('mysql2');
- 
+require("console.table");
 
 
 const db = mysql.createConnection(
     {
       host: 'localhost',
       // MySQL username,
-      user: 'wburnton',
+      user: 'root',
       // MySQL password
       password: 'Radiohead2001!',
       database: 'tracker_db'
@@ -24,7 +24,7 @@ function init () {
                 type: "list", 
                 name: "init", 
                 message: "What would you like to do?", 
-                choices: ["View All Employees", new inquirer.Separator(),"Add Employee", "Update Emplopyee Roles", "View All Roles", "Add Role", "View All Departments", "Add Department"]
+                choices: ["View All Employees", new inquirer.Separator(),"Add Employee", "Update Employee Roles", "View All Roles", "Add Role", "View All Departments", "Add Department"]
 
             }
         ])
@@ -44,12 +44,40 @@ function init () {
             } else if (answers === "Add Department") { 
                 addDepartment();
             } else  { 
-                quit();
+                db.end();
             };
         })
 }; 
 
+// manager queries
+var managersArr = [];
+function selectManager() {
+  db.query("SELECT first_name, last_name FROM employee WHERE manager_id IS NULL", function(err, res) {
+    if (err) throw err
+    for (var i = 0; i < res.length; i++) {
+      managersArr.push(res[i].first_name);
+    }
+
+  })
+  return managersArr;
+} 
+
+// role queries
+var roleArr = [];
+function selectRole() {
+  db.query("SELECT * FROM role", function(err, res) {
+    if (err) throw err
+    for (var i = 0; i < res.length; i++) {
+      roleArr.push(res[i].title);
+    }
+
+  })
+  return roleArr;
+}
+
+
 function addEmployee () { 
+    
     inquirer 
         .prompt ([ 
             { 
@@ -67,13 +95,13 @@ function addEmployee () {
                 type: "list", 
                 name: "role", 
                 message: "What is the employee's role?", 
-                choices: [""],
+                choices: selectRole()
             }, 
             { 
                 type: "list", 
                 name: "manager", 
                 message: "Who is the employee's manager?",
-                choices: [""],
+                choices: selectManager()
             },
 
         ]) 
@@ -140,13 +168,64 @@ function addRole () {
                 choices: [""],
             },
         ]) 
-        .then((answers) => { 
+        .then((answers) => {  
+            
 
         })
 }; 
 
 function updateRoles () { 
+    db.query('SELECT * FROM employee', (err, employees) => {
+        if (err) console.log(err);
+        employees = employees.map((employee) => {
+            return {
+                name: `${employee.first_name} ${employee.last_name}`,
+                value: employee.id,
+            };
+        });
+        db.query('SELECT * FROM role', (err, roles) => {
+            if (err) console.log(err);
+            roles = roles.map((role) => {
+                return {
+                    name: role.title,
+                    value: role.id,
+                }
+            });
+           
+            
+            inquirer.prompt([
+              {
+                  type: 'list',
+                  name: 'selectEmployee',
+                  message: 'Select the employee you would like to update',
+                  choices: employees,
+              },
+              {
+                  type: 'list',
+                  name: 'selectRole',
+                  message: 'Select the role you would like the employee to have',
+                  choices: roles,
+              },
+          ])
+          .then((data) => {
+              db.query('UPDATE employee SET ? WHERE ?',
+                  [   {
+                          role_id: data.selectRole,
+                      },
+                      {
+                          id: data.selectEmployee,
+                      },
+                  ],
+                  function (err) {
+                      if (err) throw err;
+                  }
+              );
+              console.log('The employee has been updated!');
+              viewEmployees();
+          });
 
+             });
+          });
 }; 
 
 function viewRoles () { 
@@ -169,4 +248,6 @@ function viewDep () {
         err ? console.error(err) : console.table(results);
         init();
     })
-};
+}; 
+
+init();
