@@ -24,29 +24,37 @@ function init () {
                 type: "list", 
                 name: "init", 
                 message: "What would you like to do?", 
-                choices: ["View All Employees", new inquirer.Separator(),"Add Employee", "Update Employee Roles", "View All Roles", "Add Role", "View All Departments", "Add Department"]
+                choices: ["View All Employees","Add Employee", "Update Employee Roles", "View All Roles", "Add Role", "View All Departments", "Add Department"]
 
             }
         ])
         .then((answers) => { 
-            if (answers === "View All Employess" ) { 
+            const { choices } = answers;
+
+            if (choices === "View All Employees" ) { 
                 viewEmp();
-            } else if (answers === "Add Employee") { 
+            } 
+            if (choices === "Add Employee") { 
                 addEmployee();
-            } else if (answers === "Update Employee Roles") { 
+                console.log(choices);
+            } 
+            if (choices === "Update Employee Roles") { 
                 updateRoles();
-            } else if (answers === "View All Roles") { 
+            }
+             if (choices === "View All Roles") { 
                 viewRoles();
-            } else if (answers === "Add Role") { 
+            }
+             if (choices === "Add Role") { 
                 addRole();
-            } else if (answers === "View All Departments") { 
+            } 
+            if (choices === "View All Departments") { 
                 viewDep();
-            } else if (answers === "Add Department") { 
+            } 
+            if (choices === "Add Department") { 
                 addDepartment();
-            } else  { 
-                db.end();
-            };
-        })
+            }; 
+            
+        });
 }; 
 
 // manager queries
