@@ -29,28 +29,29 @@ function init () {
             }
         ])
         .then((answers) => { 
-            const { choices } = answers;
+            console.log(answers)
+            const { init } = answers;
 
-            if (choices === "View All Employees" ) { 
+            if (init === "View All Employees" ) { 
                 viewEmp();
             } 
-            if (choices === "Add Employee") { 
+            if (init === "Add Employee") { 
                 addEmployee();
-                console.log(choices);
+                
             } 
-            if (choices === "Update Employee Roles") { 
+            if (init === "Update Employee Roles") { 
                 updateRoles();
             }
-             if (choices === "View All Roles") { 
+             if (init === "View All Roles") { 
                 viewRoles();
             }
-             if (choices === "Add Role") { 
+             if (init === "Add Role") { 
                 addRole();
             } 
-            if (choices === "View All Departments") { 
+            if (init === "View All Departments") { 
                 viewDep();
             } 
-            if (choices === "Add Department") { 
+            if (init === "Add Department") { 
                 addDepartment();
             }; 
             
@@ -60,10 +61,14 @@ function init () {
 // manager queries
 var managersArr = [];
 function selectManager() {
-  db.query("SELECT first_name, last_name FROM employee WHERE manager_id IS NULL", function(err, res) {
+  db.query("SELECT id, first_name, last_name FROM employee WHERE manager_id IS NULL", function(err, res) {
     if (err) throw err
     for (var i = 0; i < res.length; i++) {
-      managersArr.push(res[i].first_name);
+        let managerData = {
+            name: `${res[i].first_name} ${res[i].last_name}`,
+            value: res[i].id
+          } 
+      managersArr.push(managerData);
     }
 
   })
@@ -73,15 +78,39 @@ function selectManager() {
 // role queries
 var roleArr = [];
 function selectRole() {
-  db.query("SELECT * FROM role", function(err, res) {
+  db.query("SELECT * FROM roles", function(err, res) {
     if (err) throw err
     for (var i = 0; i < res.length; i++) {
-      roleArr.push(res[i].title);
+      let roleData = {
+        name: res[i].title,
+        value: res[i].id
+      } 
+      roleArr.push(roleData);
     }
 
   })
+  
   return roleArr;
+} 
+
+var departArr = [];
+function selectDepart() {
+  db.query("SELECT * FROM department", function(err, res) {
+    if (err) throw err
+    for (var i = 0; i < res.length; i++) {
+      let depData = {
+        name: res[i].name,
+        value: res[i].id
+      } 
+      
+      departArr.push(depData);
+      
+    }
+
+  })
+  return departArr;
 }
+
 
 
 function addEmployee () { 
@@ -114,19 +143,14 @@ function addEmployee () {
 
         ]) 
         .then((ans) => { 
-            db.query(`INSERT INTO employees(first_name, last_name)
-                    VALUES(?, ?)`, [ans.first_name, ans.last_name], (err, results) => {
-                if (err) {
-                    console.log(err)
-                } else {
-                    db.query(`SELECT * FROM employees`, (err, results) => {
-                        err ? console.error(err) : console.table(results);
-                        init();
-                    })
-                }
-        }) 
+            console.log(ans);
+            db.query(`INSERT INTO employee(first_name, last_name, role_id, manager_id)
+                    VALUES(?, ?, ?, ?)`, [ans.first_name, ans.last_name, ans.role, ans.manager])
+            viewEmp(); 
+            init();
+        } 
         
-    })
+    )
 
 }; 
 
@@ -141,45 +165,50 @@ function addDepartment () {
         ])
         .then((answer) => { 
             db.query(`INSERT INTO department(name)
-                    VALUES(?)`, answer.newdepart, (err, results) => {
-                if (err) {
-                    console.log(err)
-                } else {
-                    db.query(`SELECT * FROM department`, (err, results) => {
-                        err ? console.error(err) : console.table(results);
-                        init();
-                    })
-                }
-            }
+                    VALUES(?)`, answer.newdepart) 
+                    viewDep(); 
+                    init();     
+            } 
+             
             )
-        })
+        
         
 }; 
 
 function addRole () { 
+    console.log("adding role!")
     inquirer 
-        .prompt([ 
+        .prompt ([ 
             { 
                 type: "input", 
                 name: "name", 
-                message: "What is the name of the Role?",
+                message: "What is the name of the role?",
             }, 
             { 
                 type: "input", 
                 name: "salary", 
-                message: "What is the salary of the role?",
+                message: "What is their salary",
+
             }, 
             { 
                 type: "list", 
-                name: "department", 
-                message: "Which department does the role belong to?",
-                choices: [""],
-            },
-        ]) 
-        .then((answers) => {  
+                name: "dept", 
+                message: "Select the department from below", 
+                choices: selectDepart()
+            } 
             
 
-        })
+        ]).then((answers) => {  
+            console.log(answers);
+            db.query(`INSERT INTO roles(title, salary, department_id)
+                      VALUES (?, ?, ?)`, [answers.name, answers.salary, answers.dept]) 
+                        
+            
+                     
+                    viewRoles(); 
+                    init();
+                }
+            )
 }; 
 
 function updateRoles () { 
@@ -191,7 +220,7 @@ function updateRoles () {
                 value: employee.id,
             };
         });
-        db.query('SELECT * FROM role', (err, roles) => {
+        db.query('SELECT * FROM roles', (err, roles) => {
             if (err) console.log(err);
             roles = roles.map((role) => {
                 return {
@@ -229,7 +258,7 @@ function updateRoles () {
                   }
               );
               console.log('The employee has been updated!');
-              viewEmployees();
+              init();
           });
 
              });
@@ -244,7 +273,7 @@ function viewRoles () {
 }; 
 
 function viewEmp () {  
-    db.query(`SELECT * FROM employees`, (err, results) => {
+    db.query(`SELECT * FROM employee`, (err, results) => {
         err ? console.error(err) : console.table(results);
         init();
     })
